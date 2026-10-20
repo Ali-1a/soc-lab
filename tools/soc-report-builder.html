@@ -1,0 +1,563 @@
+<title>SOC Alert Report Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: console split — intake form on the left, live ticket output on the right; stacks on phones */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#15202b; --muted:#5b6876; --line:#d5dbe2;
+  --accent:#1f5f8b; --accent-ink:#ffffff; --field:#f7f9fb;
+  --ok:#1d7a4f; --warn:#a86a00; --crit:#b3261e; --report-bg:#0f1a24; --report-ink:#d7e3ee; --report-dim:#7f93a6;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c131a; --panel:#131d27; --ink:#e3eaf1; --muted:#93a3b3; --line:#26343f;
+  --accent:#5aa7dc; --accent-ink:#06121c; --field:#0f1821;
+  --ok:#4cc38a; --warn:#e2a93b; --crit:#f2786d; --report-bg:#081017; --report-ink:#d7e3ee; --report-dim:#7f93a6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c131a; --panel:#131d27; --ink:#e3eaf1; --muted:#93a3b3; --line:#26343f;
+  --accent:#5aa7dc; --accent-ink:#06121c; --field:#0f1821;
+  --ok:#4cc38a; --warn:#e2a93b; --crit:#f2786d; --report-bg:#081017; --report-ink:#d7e3ee; --report-dim:#7f93a6; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:20px 40px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font-size:1.5rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;font-size:.92rem}
+.tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px;font-size:.88rem}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+fieldset{border:0;padding:0;margin:0 0 18px;display:grid;gap:12px}
+legend{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+label{display:grid;gap:4px;font-size:.82rem;font-weight:500;min-width:0}
+label small{font-weight:400;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:.9rem;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink)}
+textarea{resize:vertical;min-height:70px;font-family:var(--mono);font-size:.82rem}
+textarea.prose{font-family:var(--sans);font-size:.9rem}
+.check{display:flex;align-items:center;gap:8px;font-size:.88rem}
+.check input{width:auto}
+.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.outhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:6px 12px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.status{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.pill{font-family:var(--mono);font-size:.72rem;padding:3px 8px;border-radius:999px;border:1px solid currentColor;letter-spacing:.03em}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.crit{color:var(--crit)} .pill.info{color:var(--accent)}
+pre#report{background:var(--report-bg);color:var(--report-ink);font-family:var(--mono);font-size:.8rem;line-height:1.6;padding:16px;border-radius:8px;white-space:pre-wrap;word-break:break-word;margin:0;max-height:70vh;overflow:auto}
+.quality{margin-top:14px;font-size:.84rem}
+.quality h3{font-size:.72rem;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:500}
+.quality ul{list-style:none;padding:0;margin:0;display:grid;gap:3px}
+.quality li::before{content:"✓ ";color:var(--ok);font-weight:700}
+.quality li.miss::before{content:"• ";color:var(--warn)}
+.quality li.miss{color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:8px}
+.bar span{display:block;height:100%;background:var(--accent);transition:width .2s}
+.toast{font-size:.82rem;color:var(--ok);min-height:1.2em}
+.ai{display:grid;gap:8px;margin-bottom:12px;padding:12px;border:1px dashed var(--accent);border-radius:8px}
+.ai-row{display:flex;flex-wrap:wrap;gap:8px}
+.ai-btn{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:600}
+button:disabled{opacity:.5;cursor:not-allowed}
+.ai-note{margin:0;font-size:.8rem;color:var(--muted)}
+.ai-note.warn{color:var(--warn)}
+.review{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--field);font-size:.86rem}
+.review h3{font-size:.72rem;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:500}
+#reviewText{white-space:pre-wrap;word-break:break-word}
+@media (prefers-reduced-motion:reduce){.bar span{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="tag">Tier 1 · Alert triage</div>
+      <h1>SOC Alert Report Builder</h1>
+      <p class="sub">Fill in what you found. The report writes itself, ready to paste into the ticket.</p>
+    </div>
+    <div class="toolbar">
+      <button id="btnExample" type="button">Load example</button>
+      <button id="btnClear" type="button">Clear form</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <fieldset>
+        <legend>Alert</legend>
+        <div class="row">
+          <label>Alert name<input id="alertName" placeholder="Suspicious Login from New Country"></label>
+          <label>Alert / Ticket ID<input id="alertId" placeholder="SOC-1042"></label>
+        </div>
+        <div class="row">
+          <label>Alert type
+            <select id="type">
+              <option value="phishing">Phishing</option>
+              <option value="login">Suspicious login</option>
+              <option value="malware">Malware / Suspicious process</option>
+              <option value="bruteforce">Brute force</option>
+              <option value="exfil">Data exfiltration</option>
+              <option value="network">Suspicious network traffic</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label>Severity
+            <select id="severity">
+              <option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Alert time<input id="time" type="datetime-local"></label>
+          <label>Time zone<input id="tz" value="UTC"></label>
+          <label>Analyst<input id="analyst" placeholder="Your name"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Scope: who and where</legend>
+        <div class="row">
+          <label>User<input id="user" placeholder="j.smith"></label>
+          <label>User role <small>(from identity lookup)</small><input id="role" placeholder="Accountant, Finance"></label>
+        </div>
+        <div class="row">
+          <label>Host<input id="host" placeholder="WS-FIN-07"></label>
+          <label>Source IP<input id="srcIp" placeholder="185.220.101.4"></label>
+          <label>Destination<input id="dst" placeholder="mail server / IP / domain"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Investigation</legend>
+        <label>What happened <small>(short, factual)</small>
+          <textarea id="what" class="prose" rows="3" placeholder="The user received an email from an external sender..."></textarea></label>
+        <label>Evidence <small>(one finding per line)</small>
+          <textarea id="evidence" rows="4" placeholder="Sender domain registered 3 days ago"></textarea></label>
+        <label>IOCs <small>(one per line; IPs, domains, URLs, hashes, emails are detected and defanged)</small>
+          <textarea id="iocs" rows="3" placeholder="185.220.101.4"></textarea></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Decision</legend>
+        <label>Verdict
+          <select id="verdict">
+            <option value="tp">True Positive</option>
+            <option value="fp">False Positive</option>
+            <option value="btp">Benign True Positive (authorized activity)</option>
+            <option value="inc">Inconclusive</option>
+          </select>
+        </label>
+        <label>Why this verdict <small>(the key reason)</small>
+          <textarea id="reason" class="prose" rows="2" placeholder="The login came from a Tor exit node and the user confirmed it was not them."></textarea></label>
+        <label>Actions already taken <small>(one per line)</small>
+          <textarea id="actions" rows="2" placeholder="Disabled user account"></textarea></label>
+        <label class="check"><input type="checkbox" id="autoRec" checked> Add recommended next steps for this alert type</label>
+        <label class="check"><input type="checkbox" id="escalate"> Escalate to Tier 2</label>
+      </fieldset>
+    </form>
+
+    <section class="panel out" aria-label="Generated report">
+      <div class="outhead">
+        <div class="seg" role="group" aria-label="Output format">
+          <button type="button" id="fmtPlain" aria-pressed="true">Plain text</button>
+          <button type="button" id="fmtMd" aria-pressed="false">Markdown</button>
+        </div>
+        <button type="button" class="primary" id="btnCopy">Copy report</button>
+      </div>
+      <div class="ai" id="aiBox">
+        <div class="ai-row">
+          <button type="button" class="ai-btn" id="btnAi" disabled>Write with AI</button>
+          <button type="button" id="btnReview" disabled>Review my analysis</button>
+          <button type="button" id="btnStop" hidden>Stop</button>
+        </div>
+        <div class="seg" role="group" aria-label="Report version" id="verSeg" hidden>
+          <button type="button" id="verTpl" aria-pressed="false">Template</button>
+          <button type="button" id="verAi" aria-pressed="true">AI version</button>
+        </div>
+        <p class="ai-note" id="aiNote">Connecting to Claude…</p>
+      </div>
+      <div class="status" id="status"></div>
+      <pre id="report" tabindex="0"></pre>
+      <div class="toast" id="toast" role="status"></div>
+      <div class="review" id="reviewBox" hidden>
+        <h3>Tier 2 review</h3>
+        <div id="reviewText"></div>
+      </div>
+      <div class="quality">
+        <h3>Report quality</h3>
+        <div class="bar"><span id="qbar" style="width:0"></span></div>
+        <ul id="qlist"></ul>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const FIELDS = ["alertName","alertId","type","severity","time","tz","analyst","user","role","host","srcIp","dst","what","evidence","iocs","verdict","reason","actions"];
+const CHECKS = ["autoRec","escalate"];
+let format = "plain";
+let tplText = "", aiText = null, aiStale = false, view = "ai", busy = false, ctl = null, sample = null;
+let escalateTouched = false;
+
+const EXAMPLE = {
+  alertName:"Suspicious Login from New Country", alertId:"SOC-1042", type:"login", severity:"High",
+  time:"2026-10-11T03:14", tz:"UTC", analyst:"A. Ali",
+  user:"j.smith", role:"Accountant, Finance department", host:"Microsoft 365 (cloud)",
+  srcIp:"185.220.101.4", dst:"login.microsoftonline.com",
+  what:"A successful Microsoft 365 sign-in for j.smith was recorded from an IP address in the Netherlands. The user is based in Romania and has no travel recorded. A new inbox rule was created 6 minutes after the sign-in.",
+  evidence:"Source IP 185.220.101.4 is a known Tor exit node (AbuseIPDB: 100% confidence)\nNo previous sign-ins from this country in the last 90 days\nMFA was satisfied by a push approval at 03:14, outside working hours\nNew inbox rule forwards emails containing \"invoice\" to an external address\nUser confirmed by phone they did not sign in",
+  iocs:"185.220.101.4\nattacker.mailbox@protonmail.com\nhttps://m365-secure-verify.com/login",
+  verdict:"tp",
+  reason:"The sign-in came from a Tor exit node, was approved through an unexpected MFA push, was followed by a malicious forwarding rule, and the user denied the activity.",
+  actions:"Revoked all active sessions for j.smith\nDisabled the forwarding inbox rule",
+  autoRec:true, escalate:true
+};
+
+const TYPE_LABEL = {phishing:"Phishing",login:"Suspicious login",malware:"Malware / Suspicious process",bruteforce:"Brute force",exfil:"Data exfiltration",network:"Suspicious network traffic",other:"Other"};
+const VERDICT_LABEL = {tp:"TRUE POSITIVE",fp:"FALSE POSITIVE",btp:"BENIGN TRUE POSITIVE",inc:"INCONCLUSIVE"};
+const VERDICT_PHRASE = {
+  tp:"confirmed malicious activity",
+  fp:"determined that the alert was triggered by legitimate activity and is a false positive",
+  btp:"confirmed that the activity occurred but was authorized and expected",
+  inc:"could not reach a conclusive verdict with the data currently available"
+};
+const MITRE = {
+  phishing:"T1566 – Phishing", login:"T1078 – Valid Accounts", malware:"T1204 – User Execution / T1059 – Command and Scripting Interpreter",
+  bruteforce:"T1110 – Brute Force", exfil:"T1041 – Exfiltration Over C2 Channel / T1567 – Exfiltration Over Web Service",
+  network:"T1071 – Application Layer Protocol", other:""
+};
+const RECS = {
+  phishing:{
+    tp:["Purge the email from all recipient mailboxes","Block the sender address/domain and listed URLs at the mail gateway and web proxy","Identify every user who clicked or replied; reset credentials for anyone who entered them","If an attachment was opened, isolate the host and run a full EDR scan"],
+    fp:["Confirm the sender with the business owner and add it to the allowlist if appropriate","Review the detection rule that fired and propose tuning"],
+    btp:["Document the authorization (e.g. approved phishing simulation) and close"],
+    inc:["Detonate the attachment/URL in a sandbox","Check mail logs for other recipients of the same message","Ask the user whether they interacted with the email"]
+  },
+  login:{
+    tp:["Revoke all active sessions and reset the user's password","Re-register MFA and review registered devices","Review all activity after the sign-in (mailbox rules, file access, OAuth app consents)","Block the source IP at the identity provider / conditional access"],
+    fp:["Document the legitimate reason (VPN, travel, new device) and close","Consider adding a known location or VPN range to the detection exclusions"],
+    btp:["Record the approved travel or access and close"],
+    inc:["Contact the user through a trusted channel to confirm the sign-in","Check for impossible travel and other sign-ins from the same IP across all users"]
+  },
+  malware:{
+    tp:["Isolate the host through EDR","Collect triage data (process tree, autoruns, memory if possible)","Block the file hash across the environment and hunt for it on other hosts","Reset credentials of users logged on to the host"],
+    fp:["Verify the file is signed and known-good, then submit it for allowlisting","Propose a rule exclusion for the verified hash or path"],
+    btp:["Confirm the tool is approved (e.g. IT admin tool) and document the owner"],
+    inc:["Submit the hash/file to a sandbox and threat intelligence","Review the parent process and command line in detail"]
+  },
+  bruteforce:{
+    tp:["Block the source IP at the firewall/WAF","Check whether any attempt succeeded; if so, treat the account as compromised","Reset passwords of targeted accounts and verify MFA","Review account lockout policy"],
+    fp:["Identify the misconfigured service or saved credential causing the failures","Have the owner fix it and close"],
+    btp:["Document the authorized test (e.g. penetration test) and close"],
+    inc:["Correlate failed logons with any successful logon from the same source","Check whether the source IP targeted other accounts"]
+  },
+  exfil:{
+    tp:["Block the destination domain/IP immediately","Preserve logs and evidence for Incident Response","Identify what data left and its classification","Engage the DLP and legal/privacy teams as per policy"],
+    fp:["Confirm the transfer was a sanctioned business process and document it","Tune the volume threshold or add the destination to the approved list"],
+    btp:["Record the approved transfer, owner, and business reason"],
+    inc:["Quantify the data volume and destination reputation","Ask the data owner whether the transfer is expected"]
+  },
+  network:{
+    tp:["Block the destination at the firewall and proxy","Isolate the source host and investigate the responsible process","Hunt for the same destination across other hosts"],
+    fp:["Identify the legitimate application generating the traffic and document it","Propose rule tuning"],
+    btp:["Document the approved service and close"],
+    inc:["Enrich the destination with threat intelligence","Capture traffic (PCAP) for deeper analysis"]
+  },
+  other:{
+    tp:["Contain the affected user/host","Preserve evidence and escalate for full investigation"],
+    fp:["Document the root cause and propose rule tuning"],
+    btp:["Document the authorization and close"],
+    inc:["Gather additional logs and context before deciding"]
+  }
+};
+
+/* ---------- IOC handling ---------- */
+function refang(s){return s.trim().replace(/\[\.\]|\(\.\)|\{\.\}/g,".").replace(/\[@\]|\[at\]/gi,"@").replace(/^hxxp/i,"http").replace(/\[:\]/g,":");}
+function classify(v){
+  if(/^[a-f0-9]{64}$/i.test(v)) return "SHA256";
+  if(/^[a-f0-9]{40}$/i.test(v)) return "SHA1";
+  if(/^[a-f0-9]{32}$/i.test(v)) return "MD5";
+  if(/^https?:\/\//i.test(v)) return "URL";
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "Email";
+  if(/^(\d{1,3}\.){3}\d{1,3}(:\d+)?$/.test(v)) return isPrivate(v)?"IP (internal)":"IP";
+  if(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(v)) return "Domain";
+  if(/\.(exe|dll|ps1|bat|vbs|js|hta|scr|docm|xlsm|zip|iso|lnk)$/i.test(v)) return "File name";
+  return "Other";
+}
+function isPrivate(ip){const p=ip.split(":")[0].split(".").map(Number);return p[0]===10||p[0]===127||(p[0]===172&&p[1]>=16&&p[1]<=31)||(p[0]===192&&p[1]===168);}
+function defang(v,t){
+  if(t.startsWith("SHA")||t==="MD5"||t==="File name"||t==="Other"||t==="IP (internal)") return v;
+  let out=v.replace(/^http/i,"hxxp");
+  if(t==="Email") out=out.replace("@","[@]");
+  return out.replace(/\./g,"[.]");
+}
+function parseIocs(text){
+  const seen=new Set(), list=[];
+  text.split(/\r?\n/).map(refang).filter(Boolean).forEach(v=>{
+    if(seen.has(v.toLowerCase())) return; seen.add(v.toLowerCase());
+    const t=classify(v); list.push({type:t,value:defang(v,t)});
+  });
+  return list;
+}
+
+/* ---------- helpers ---------- */
+const lines = s => (s||"").split(/\r?\n/).map(x=>x.trim().replace(/^[-*•]\s*/,"")).filter(Boolean);
+const sentence = s => { s=(s||"").trim(); if(!s) return ""; s=s[0].toUpperCase()+s.slice(1); return /[.!?]$/.test(s)?s:s+"."; };
+function fmtTime(v,tz){ if(!v) return ""; return v.replace("T"," ")+(tz?" "+tz.trim():""); }
+function read(){ const d={}; FIELDS.forEach(k=>d[k]=$(k).value); CHECKS.forEach(k=>d[k]=$(k).checked); return d; }
+
+function build(d){
+  const md = format==="md";
+  const H = t => md ? `\n## ${t}\n` : `\n${t.toUpperCase()}\n${"-".repeat(t.length)}`;
+  const B = t => `- ${t}`;
+  const out=[];
+  const name = d.alertName.trim() || TYPE_LABEL[d.type]+" alert";
+  const when = fmtTime(d.time,d.tz);
+  const iocs = parseIocs(d.iocs);
+  const ev = lines(d.evidence), acts = lines(d.actions);
+
+  // Title
+  const title = `Incident Report${d.alertId?" – "+d.alertId.trim():""}: ${name}`;
+  out.push(md?`# ${title}`:`${title}\n${"=".repeat(Math.min(title.length,72))}`);
+  const meta=[
+    ["Verdict",VERDICT_LABEL[d.verdict]],["Severity",d.severity],["Category",TYPE_LABEL[d.type]],
+    when&&["Detected",when], d.analyst.trim()&&["Analyst",d.analyst.trim()],
+    ["Escalated",d.escalate?"Yes – Tier 2":"No"]
+  ].filter(Boolean);
+  out.push(meta.map(([k,v])=>md?`**${k}:** ${v}  `:`${(k+":").padEnd(11)}${v}`).join("\n"));
+
+  // Summary
+  out.push(H("Summary"));
+  let who = d.user.trim()?`user ${d.user.trim()}${d.role.trim()?" ("+d.role.trim()+")":""}`:"";
+  let where = d.host.trim()?`host ${d.host.trim()}`:"";
+  let subject = [who,where].filter(Boolean).join(" on ");
+  let s1 = `${when?"On "+when+", t":"T"}he alert "${name}" was triggered${subject?" for "+subject:""}.`;
+  let s2 = `Investigation ${VERDICT_PHRASE[d.verdict]}.`;
+  let s3 = d.reason.trim()?sentence(d.reason):"";
+  let s4 = d.verdict==="tp"? (d.escalate?"The case has been escalated to Tier 2 for containment and further investigation.":"Containment actions are listed below.")
+         : d.verdict==="inc"? (d.escalate?"The case has been escalated to Tier 2 for deeper analysis.":"Further data is required before closing.")
+         : (d.escalate?"The case has been escalated to Tier 2 for review.":"No further action is required and the alert can be closed.");
+  out.push([s1,s2,s3,s4].filter(Boolean).join(" "));
+
+  // 5W
+  out.push(H("Details"));
+  const w=[
+    ["Who", who?who.replace(/^user /,""):"Not identified"],
+    ["What", d.what.trim()?sentence(d.what):name],
+    ["When", when||"Not recorded"],
+    ["Where", [d.host.trim()&&"Host: "+d.host.trim(), d.srcIp.trim()&&"Source: "+defang(refang(d.srcIp),classify(refang(d.srcIp))), d.dst.trim()&&"Destination: "+d.dst.trim()].filter(Boolean).join(" | ")||"Not recorded"],
+    ["Why", d.reason.trim()?sentence(d.reason):"See evidence."]
+  ];
+  out.push(w.map(([k,v])=>md?`- **${k}:** ${v}`:`${(k+":").padEnd(7)}${v}`).join("\n"));
+  if(MITRE[d.type] && d.verdict!=="fp") out.push(md?`- **MITRE ATT&CK:** ${MITRE[d.type]}`:`MITRE: ${MITRE[d.type]}`);
+
+  // Evidence
+  if(ev.length){ out.push(H("Evidence")); out.push(ev.map(e=>B(sentence(e))).join("\n")); }
+
+  // IOCs
+  if(iocs.length){
+    out.push(H("Indicators of Compromise"));
+    if(md){ out.push("| Type | Value (defanged) |\n|---|---|\n"+iocs.map(i=>`| ${i.type} | \`${i.value}\` |`).join("\n")); }
+    else { const w=Math.max(...iocs.map(i=>i.type.length))+2; out.push(iocs.map(i=>`${i.type.padEnd(w)}${i.value}`).join("\n")); }
+  }
+
+  // Verdict
+  out.push(H("Verdict"));
+  out.push(`${md?"**"+VERDICT_LABEL[d.verdict]+"**":VERDICT_LABEL[d.verdict]}${d.reason.trim()?" – "+sentence(d.reason):""}`);
+
+  // Actions
+  if(acts.length){ out.push(H("Actions Taken")); out.push(acts.map(a=>B(sentence(a))).join("\n")); }
+
+  // Recommendations
+  const recs = d.autoRec ? (RECS[d.type]||RECS.other)[d.verdict] : [];
+  const actLower = acts.join(" ").toLowerCase();
+  const filtered = recs.filter(r=>{ const k=r.toLowerCase().split(" ").slice(0,2).join(" "); return !actLower.includes(k); });
+  if(filtered.length){ out.push(H("Recommended Next Steps")); out.push(filtered.map(r=>B(r)).join("\n")); }
+
+  return out.join("\n").replace(/\n{3,}/g,"\n\n").trim()+"\n";
+}
+
+function quality(d){
+  const items=[
+    [d.alertName.trim()||d.alertId.trim(),"Alert name or ID"],
+    [d.time,"Alert time"],
+    [d.user.trim()||d.host.trim(),"Affected user or host"],
+    [d.what.trim().length>20,"Clear description of what happened"],
+    [lines(d.evidence).length>=2,"At least two pieces of evidence"],
+    [d.reason.trim().length>15,"Reason for the verdict"],
+    [d.verdict!=="tp"||lines(d.iocs).length>0,"IOCs listed (needed for a true positive)"],
+    [d.verdict!=="tp"||d.escalate||lines(d.actions).length>0,"Escalation or containment for a true positive"],
+    [!!d.analyst.trim(),"Analyst name"]
+  ];
+  const done=items.filter(i=>i[0]).length;
+  $("qbar").style.width=Math.round(done/items.length*100)+"%";
+  $("qlist").innerHTML="";
+  items.forEach(([ok,t])=>{const li=document.createElement("li");li.textContent=t;if(!ok)li.className="miss";$("qlist").appendChild(li);});
+}
+
+function status(d){
+  const st=$("status"); st.innerHTML="";
+  const add=(t,c)=>{const s=document.createElement("span");s.className="pill "+c;s.textContent=t;st.appendChild(s);};
+  add(VERDICT_LABEL[d.verdict], d.verdict==="tp"?"crit":d.verdict==="inc"?"warn":"ok");
+  add("Severity: "+d.severity, /High|Critical/.test(d.severity)?"crit":d.severity==="Medium"?"warn":"info");
+  add(d.escalate?"Escalate to T2":"Close at T1", d.escalate?"warn":"info");
+  const n=parseIocs(d.iocs).length; if(n) add(n+" IOC"+(n>1?"s":""),"info");
+}
+
+function render(){
+  const d=read();
+  // smart escalation suggestion until the analyst touches the box
+  if(!escalateTouched){
+    $("escalate").checked = d.verdict==="inc" || (d.verdict==="tp" && /High|Critical/.test(d.severity));
+    d.escalate=$("escalate").checked;
+  }
+  tplText=build(d);
+  if(aiText!==null){ aiStale=true; if(!busy) setNote("You changed the form after the AI wrote this. Press Write with AI again to update it.","warn"); }
+  showReport();
+  status(d); quality(d);
+  try{localStorage.setItem("socReportDraft",JSON.stringify({...d,escalateTouched}));}catch(e){}
+}
+
+function fill(o){
+  FIELDS.forEach(k=>{ if(o[k]!==undefined) $(k).value=o[k]; });
+  CHECKS.forEach(k=>{ if(o[k]!==undefined) $(k).checked=!!o[k]; });
+}
+
+$("f").addEventListener("input",e=>{ if(e.target.id==="escalate") escalateTouched=true; render(); });
+$("f").addEventListener("change",e=>{ if(e.target.id==="escalate") escalateTouched=true; render(); });
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("btnExample").onclick=()=>{ fill(EXAMPLE); escalateTouched=false; render(); };
+let clearArmed=false;
+$("btnClear").onclick=()=>{
+  if(!clearArmed){ clearArmed=true; $("btnClear").textContent="Click again to clear"; setTimeout(()=>{clearArmed=false;$("btnClear").textContent="Clear form";},2500); return; }
+  clearArmed=false; $("btnClear").textContent="Clear form";
+  FIELDS.forEach(k=>{ const el=$(k); if(el.tagName==="SELECT") el.selectedIndex= k==="severity"?1:0; else el.value= k==="tz"?"UTC":""; });
+  $("autoRec").checked=true; escalateTouched=false; render();
+};
+function setFmt(f){ format=f; $("fmtPlain").setAttribute("aria-pressed",f==="plain"); $("fmtMd").setAttribute("aria-pressed",f==="md"); render(); }
+$("fmtPlain").onclick=()=>setFmt("plain");
+$("fmtMd").onclick=()=>setFmt("md");
+$("btnCopy").onclick=()=>{
+  const txt=$("report").textContent, toast=$("toast");
+  const fallback=()=>{const r=document.createRange();r.selectNodeContents($("report"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast.textContent="Report selected. Press Ctrl+C to copy.";};
+  try{ navigator.clipboard.writeText(txt).then(()=>{toast.textContent="Copied to clipboard.";setTimeout(()=>toast.textContent="",2500);},fallback); }catch(e){ fallback(); }
+};
+
+/* ---------- AI (Claude) ---------- */
+function showReport(){ $("report").textContent = (aiText!==null && view==="ai") ? aiText : tplText; }
+function setNote(t,c){ const n=$("aiNote"); n.textContent=t; n.className="ai-note"+(c?" "+c:""); }
+function setView(v){ view=v; $("verTpl").setAttribute("aria-pressed",v==="tpl"); $("verAi").setAttribute("aria-pressed",v==="ai"); showReport(); }
+$("verTpl").onclick=()=>setView("tpl");
+$("verAi").onclick=()=>setView("ai");
+
+function facts(d){
+  return [
+    "Alert name: "+d.alertName, "Alert ID: "+d.alertId, "Alert type: "+TYPE_LABEL[d.type], "Severity: "+d.severity,
+    "Alert time: "+fmtTime(d.time,d.tz), "Analyst: "+d.analyst, "User: "+d.user, "User role: "+d.role,
+    "Host: "+d.host, "Source IP: "+d.srcIp, "Destination: "+d.dst,
+    "What happened: "+d.what, "Evidence:\n"+d.evidence, "IOCs:\n"+d.iocs,
+    "Analyst verdict: "+VERDICT_LABEL[d.verdict], "Reason for verdict: "+d.reason,
+    "Actions already taken:\n"+d.actions, "Escalate to Tier 2: "+(d.escalate?"Yes":"No")
+  ].join("\n");
+}
+const ERR = {
+  not_granted:"Claude access was not allowed for this page. AI features are off; the template report still works.",
+  sampling_disabled:"Claude is not available for this account. The template report still works.",
+  rate_limited:"Too many requests right now. Wait a minute and try again.",
+  session_expired:"Your Claude session expired. Sign in again, then try once more.",
+  refused:"Claude declined this input. Rephrase the fields and try again.",
+  empty_completion:"Claude returned nothing. Try again with more detail in the form.",
+  prompt_too_large:"The form is too long. Shorten the evidence or description."
+};
+function errMsg(e){ return ERR[e&&e.code] || "Connection problem. Try again in a moment."; }
+function hideAi(msg){ $("btnAi").hidden=true; $("btnReview").hidden=true; $("verSeg").hidden=true; setNote(msg); }
+
+async function runAi(kind){
+  if(!sample||busy) return;
+  const d=read();
+  busy=true; ctl=new AbortController();
+  $("btnAi").disabled=$("btnReview").disabled=true; $("btnStop").hidden=false;
+  setNote("Claude is thinking… this usually takes 10 to 40 seconds.");
+  try{
+    if(kind==="write"){
+      const prompt =
+`You are a senior SOC analyst. Rewrite the incident report below into a polished, professional English ticket report.
+
+Rules:
+- Use ONLY the facts given. Never invent times, IPs, hosts, tools, or findings. If something important is missing, write "Not provided" and do not guess.
+- Keep IOCs exactly as given in the draft (defanged).
+- Clear, concise, objective tone. Short sentences. Past tense for findings. No filler, no hype.
+- The executive summary must let a manager understand the incident in 20 seconds.
+- Justify the verdict by linking specific evidence to the conclusion.
+- Recommended next steps must be specific, ordered by priority, and fit the verdict.
+- Output format: ${format==="md"?"Markdown with ## section headings and - bullets":"plain text with UPPERCASE section headings underlined with dashes and - bullets, no Markdown symbols like ** or #"}.
+- Sections in order: title line, key facts (verdict, severity, category, detected, analyst, escalated), Executive Summary, Timeline (only if times are given), Details (Who/What/When/Where/Why), Evidence, Indicators of Compromise, Verdict and Justification, Actions Taken, Recommended Next Steps, MITRE ATT&CK (if relevant and not a false positive).
+- Output only the report, nothing before or after it.
+
+ANALYST FINDINGS:
+${facts(d)}
+
+TEMPLATE DRAFT (structure reference):
+${tplText}`;
+      aiText=""; aiStale=false; view="ai"; $("verSeg").hidden=false; setView("ai");
+      $("report").textContent="Thinking…";
+      const r = await sample(prompt,{signal:ctl.signal,cache:false,onText:({text})=>{ aiText=text; if(view==="ai") $("report").textContent=text; }});
+      aiText=r.text; showReport();
+      setNote(r.truncated?"The answer was cut short. Shorten the form and try again.":"AI version ready. Read it before you copy: you are responsible for every fact in it.", r.truncated?"warn":"");
+    } else {
+      const prompt =
+`You are a Tier 2 SOC lead reviewing a Tier 1 analyst's triage. Review the findings below and coach the analyst.
+
+Reply in plain text, no Markdown symbols, with exactly these parts:
+VERDICT CHECK: one or two sentences. Does the evidence support the verdict "${VERDICT_LABEL[d.verdict]}"? Say clearly if it does not.
+GAPS: up to 5 short bullet lines ("- ") naming specific checks or evidence that are missing (for example a log source to query, a lookup to run).
+REPORT WRITING: up to 3 short bullet lines on how to make the write-up clearer.
+ONE TIP: one practical lesson for a junior analyst from this case.
+
+Be direct and specific to this case. Do not repeat the findings back.
+
+FINDINGS:
+${facts(d)}`;
+      $("reviewBox").hidden=false; $("reviewText").textContent="Thinking…";
+      const r = await sample(prompt,{signal:ctl.signal,cache:false,onText:({text})=>{ $("reviewText").textContent=text; }});
+      $("reviewText").textContent=r.text;
+      setNote("Review ready below the report.");
+    }
+  }catch(e){
+    if(e&&e.code==="cancelled"){ setNote("Stopped."); if(kind==="write"&&!aiText){aiText=null;$("verSeg").hidden=true;showReport();} }
+    else if(e&&["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e.code)){
+      if(kind==="write"){aiText=null;} showReport(); hideAi(errMsg(e)); if(kind==="review") $("reviewBox").hidden=true;
+    } else {
+      if(kind==="write"){ if(e&&e.text){aiText=e.text;} else {aiText=null;$("verSeg").hidden=true;} showReport(); }
+      else if(!(e&&e.text)) $("reviewBox").hidden=true;
+      setNote(errMsg(e),"warn");
+    }
+  }finally{
+    busy=false; $("btnAi").disabled=$("btnReview").disabled=false; $("btnStop").hidden=true;
+  }
+}
+$("btnAi").onclick=()=>runAi("write");
+$("btnReview").onclick=()=>runAi("review");
+$("btnStop").onclick=()=>ctl&&ctl.abort();
+
+(async()=>{
+  if(!window.claude||typeof window.claude.use!=="function"){ hideAi("AI writing works when you open this page from its Claude link. The template report works everywhere."); return; }
+  try{ sample=await window.claude.use("sample"); }catch(e){ sample=null; }
+  if(!sample){ hideAi("AI writing is not available in this view. The template report still works."); return; }
+  $("btnAi").disabled=$("btnReview").disabled=false;
+  setNote("Claude can rewrite your report professionally or review your analysis. It uses only the facts you enter.");
+})();
+
+// start: saved draft, otherwise the example
+let saved=null; try{saved=JSON.parse(localStorage.getItem("socReportDraft")||"null");}catch(e){}
+if(saved && saved.alertName!==undefined){ fill(saved); escalateTouched=!!saved.escalateTouched; } else fill(EXAMPLE);
+render();
+})();
+</script>

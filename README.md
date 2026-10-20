@@ -20,6 +20,7 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 |---|---|
 | Splunk: The Basics | [notes/splunk-basics.md](notes/splunk-basics.md) |
 | Elastic Stack: The Basics | [notes/elastic-stack-basics.md](notes/elastic-stack-basics.md) |
+| Introduction to SOAR | [notes/intro-to-soar.md](notes/intro-to-soar.md) |
 | SPL vs KQL cheatsheet | [cheatsheets/siem-queries.md](cheatsheets/siem-queries.md) |
 
 ## Tools
@@ -30,6 +31,7 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 
 - [x] Splunk: The Basics
 - [x] Elastic Stack: The Basics
+- [x] Introduction to SOAR
 - [x] SOC Simulator: phishing scenario (passed, all true positives identified)
 
 ## My triage method

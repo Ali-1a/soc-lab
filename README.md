@@ -22,6 +22,7 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 | Elastic Stack: The Basics | [notes/elastic-stack-basics.md](notes/elastic-stack-basics.md) |
 | Introduction to SOAR | [notes/intro-to-soar.md](notes/intro-to-soar.md) |
 | Pyramid of Pain | [notes/pyramid-of-pain.md](notes/pyramid-of-pain.md) |
+| Cyber Kill Chain | [notes/cyber-kill-chain.md](notes/cyber-kill-chain.md) |
 | SPL vs KQL cheatsheet | [cheatsheets/siem-queries.md](cheatsheets/siem-queries.md) |
 
 ## Tools
@@ -34,6 +35,7 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 - [x] Elastic Stack: The Basics
 - [x] Introduction to SOAR
 - [x] Pyramid of Pain
+- [x] Cyber Kill Chain
 - [x] SOC Simulator: phishing scenario (passed, all true positives identified)
 
 ## My triage method

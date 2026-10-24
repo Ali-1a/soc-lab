@@ -1,8 +1,23 @@
 # IOC Triage
 
-A single-page, offline tool that extracts indicators of compromise (IOCs) from any text — logs, a phishing email, a threat report — then defangs them, removes duplicates, and ranks them by the **Pyramid of Pain** so an analyst knows what to block first and how much it hurts the adversary.
+Extracts indicators of compromise (IOCs) from any text — logs, a phishing email, a threat report — then defangs them, removes duplicates, and ranks them by the **Pyramid of Pain** so an analyst knows what to block first and how much it hurts the adversary.
 
-**No install, no upload.** Download [`ioc-triage.html`](ioc-triage.html) and open it in a browser, or run it from source. Everything runs client-side, so it is safe for sensitive text — nothing leaves the page.
+Two front-ends share the same extraction logic:
+
+| | Use it when |
+|---|---|
+| **[`ioc-triage.html`](ioc-triage.html)** — browser page | You want to paste text and read the result. No install, nothing leaves the page, safe for sensitive data. |
+| **[`ioc_triage.py`](ioc_triage.py)** — command-line tool | You want to automate it, pipe logs into it, or export JSON/CSV into another tool. Pure standard library, no dependencies. |
+
+### Command-line usage
+
+```bash
+python3 ioc_triage.py report.txt            # ranked table
+cat firewall.log | python3 ioc_triage.py    # read from a pipe
+python3 ioc_triage.py *.log --json          # export JSON
+python3 ioc_triage.py report.txt --csv      # export CSV
+python3 ioc_triage.py report.txt --raw      # keep indicators fanged
+```
 
 ## What it does
 
@@ -27,13 +42,14 @@ The two top tiers (Tools, TTPs) are intentionally left to analysis — they can'
 
 ## Validation
 
-The extraction engine is covered by an automated suite ([`test/ioc-triage.test.mjs`](test/ioc-triage.test.mjs)) that pulls the live code straight out of the page and runs **41 checks**, including a real published IOC set — the CISA **#StopRansomware: Medusa** advisory (AA25-071A). On that real data the tool recovered an IP the advisory's own IP list missed (hidden inside a malformed URL), kept only the six correctly-formed hashes while rejecting five malformed ones, and reclassified a domain the advisory had filed under "IP addresses".
-
-Run it with Node (no dependencies):
+Both front-ends are covered by automated tests, run against a real published IOC set — the CISA **#StopRansomware: Medusa** advisory (AA25-071A). On that real data the tool recovered an IP the advisory's own IP list missed (hidden inside a malformed URL), kept only the six correctly-formed hashes while rejecting five malformed ones, and reclassified a domain the advisory had filed under "IP addresses".
 
 ```bash
-node test/ioc-triage.test.mjs
+python3 test/test_ioc_triage.py      # Python tool — 12 test classes
+node    test/ioc-triage.test.mjs     # HTML page engine — 41 checks
 ```
+
+The Node test pulls the extraction code straight out of the published page, so it tests exactly what ships.
 
 ## License
 

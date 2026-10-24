@@ -29,7 +29,7 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 
 See [tools/](tools/) for details and the test suite.
 
-- **[IOC Triage](tools/ioc-triage.html)** — extracts IOCs from any text (logs, phishing email, threat report), defangs and de-duplicates them, and ranks them by the Pyramid of Pain. Runs fully offline. Its extraction engine is covered by an automated suite of 41 checks, validated against the real CISA Medusa (AA25-071A) IOC set.
+- **IOC Triage** — extracts IOCs from any text (logs, phishing email, threat report), defangs and de-duplicates them, and ranks them by the Pyramid of Pain. Ships as both a browser page ([`ioc-triage.html`](tools/ioc-triage.html)) and a command-line tool ([`ioc_triage.py`](tools/ioc_triage.py), with JSON/CSV export). Both are covered by automated tests validated against the real CISA Medusa (AA25-071A) IOC set.
 - **[SOC Alert Report Builder](tools/soc-report-builder.html)** — a single-page form that turns triage findings into a structured incident report (5W summary, defanged IOCs, recommended next steps).
 
 ## Progress
@@ -51,7 +51,7 @@ See [tools/](tools/) for details and the test suite.
 
 ## Skills
 
-`Wireshark` · `Splunk` · `Elastic Stack / Kibana` · `SPL` · `KQL` · `MITRE ATT&CK` · `Phishing analysis` · `Alert triage` · `Incident reporting`
+`Wireshark` · `Splunk` · `Elastic Stack / Kibana` · `SPL` · `KQL` · `MITRE ATT&CK` · `Python` · `Phishing analysis` · `Alert triage` · `Incident reporting`
 
 ## License
 

@@ -27,7 +27,10 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 
 ## Tools
 
-- [SOC Alert Report Builder](tools/soc-report-builder.html): a single-page form that turns triage findings into a structured incident report (5W summary, defanged IOCs, recommended next steps). Download the file and open it in a browser.
+See [tools/](tools/) for details and the test suite.
+
+- **[IOC Triage](tools/ioc-triage.html)** — extracts IOCs from any text (logs, phishing email, threat report), defangs and de-duplicates them, and ranks them by the Pyramid of Pain. Runs fully offline. Its extraction engine is covered by an automated suite of 41 checks, validated against the real CISA Medusa (AA25-071A) IOC set.
+- **[SOC Alert Report Builder](tools/soc-report-builder.html)** — a single-page form that turns triage findings into a structured incident report (5W summary, defanged IOCs, recommended next steps).
 
 ## Progress
 
@@ -48,4 +51,8 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 
 ## Skills
 
-`Wireshark` · `Splunk` · `Elastic Stack / Kibana` · `SPL` · `KQL` · `Phishing analysis` · `Alert triage` · `Incident reporting`
+`Wireshark` · `Splunk` · `Elastic Stack / Kibana` · `SPL` · `KQL` · `MITRE ATT&CK` · `Phishing analysis` · `Alert triage` · `Incident reporting`
+
+## License
+
+MIT — see [LICENSE](LICENSE).

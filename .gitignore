@@ -1,0 +1,5 @@
+# test scratch
+tools/test/_engine.mjs
+node_modules/
+*.log
+.DS_Store

@@ -1,0 +1,290 @@
+<title>IOC Triage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: paste on the left, extracted & pyramid-ranked IOCs on the right; stacks on phones */
+:root{
+  --bg:#eef1f5; --panel:#ffffff; --sunk:#f5f7fa; --ink:#15202b; --muted:#5a6775; --line:#d7dde4;
+  --accent:#0f7b74; --accent-ink:#ffffff; --field:#f7f9fb;
+  /* pyramid pain tiers (low pain -> high pain) */
+  --t-trivial:#3a9d5d; --t-easy:#6aa84f; --t-simple:#c9a227; --t-annoying:#d98a1f; --t-tools:#c7571f; --t-ttp:#b3261e;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1118; --panel:#131c26; --sunk:#0f1821; --ink:#e4ebf2; --muted:#93a3b3; --line:#26333f;
+  --accent:#43c4b8; --accent-ink:#06130f; --field:#0f1821;
+  --t-trivial:#4cc38a; --t-easy:#7bc96f; --t-simple:#e2bd3b; --t-annoying:#efa14a; --t-tools:#f0794f; --t-ttp:#f2786d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1118; --panel:#131c26; --sunk:#0f1821; --ink:#e4ebf2; --muted:#93a3b3; --line:#26333f;
+  --accent:#43c4b8; --accent-ink:#06130f; --field:#0f1821;
+  --t-trivial:#4cc38a; --t-easy:#7bc96f; --t-simple:#e2bd3b; --t-annoying:#efa14a; --t-tools:#f0794f; --t-ttp:#f2786d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:22px 48px}
+header{margin-bottom:18px}
+.tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:1.6rem;margin:2px 0 0;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:4px 0 0;max-width:62ch;font-size:.92rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+label.lbl{display:block;font-size:.82rem;font-weight:600;margin-bottom:8px}
+textarea{font-family:var(--mono);font-size:.82rem;width:100%;min-height:340px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--ink);resize:vertical;line-height:1.55}
+@media (max-width:860px){textarea{min-height:200px}}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 13px;font-size:.88rem}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{font-size:.78rem;color:var(--muted);margin-top:10px}
+.hint a,.linkbtn{color:var(--accent);background:none;border:0;padding:0;cursor:pointer;font:inherit;text-decoration:underline}
+/* summary stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px;margin-bottom:16px}
+.stat{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:center}
+.stat b{display:block;font-family:var(--mono);font-size:1.3rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+/* pyramid */
+.pyr{display:flex;flex-direction:column;align-items:center;gap:3px;margin:4px 0 18px}
+.pyr-row{display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;border-radius:4px;padding:5px 10px;font-size:.8rem;font-weight:600;position:relative;transition:opacity .15s}
+.pyr-row .nm{font-family:var(--sans)}
+.pyr-row .ct{font-family:var(--mono);background:rgba(0,0,0,.28);border-radius:20px;padding:1px 9px;font-size:.76rem;font-variant-numeric:tabular-nums}
+.pyr-row.empty{opacity:.32}
+.pyr-cap{font-size:.72rem;color:var(--muted);display:flex;justify-content:space-between;width:min(420px,100%);margin:2px auto 0;font-family:var(--mono)}
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+select{font:inherit;font-size:.84rem;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:6px 11px;font-size:.84rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.spacer{flex:1}
+/* results list */
+.results{display:flex;flex-direction:column;gap:7px;max-height:62vh;overflow:auto;padding-right:2px}
+.ioc{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:var(--sunk);border:1px solid var(--line);border-left-width:4px;border-radius:8px;padding:8px 11px}
+.ioc .val{font-family:var(--mono);font-size:.82rem;word-break:break-all;min-width:0}
+.ioc .meta{display:flex;flex-direction:column;gap:2px;text-align:right;white-space:nowrap}
+.ioc .ty{font-size:.72rem;font-weight:600}
+.ioc .tier{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.copy1{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 8px;font-size:.72rem;cursor:pointer}
+.copy1:hover{border-color:var(--accent)}
+.empty-state{text-align:center;color:var(--muted);padding:38px 10px;font-size:.9rem}
+.toast{font-size:.82rem;color:var(--accent);min-height:1.2em;margin-top:10px}
+.foot{margin-top:22px;font-size:.76rem;color:var(--muted);text-align:center;max-width:70ch;margin-inline:auto}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="tag">Pyramid of Pain · IOC triage</div>
+    <h1>IOC Triage</h1>
+    <p class="sub">Paste logs, a phishing email, or a threat report. The tool pulls out every indicator, defangs it, removes duplicates, and ranks it by the Pyramid of Pain — so you know what to block first and how much it hurts the attacker.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel">
+      <label class="lbl" for="input">Paste raw text</label>
+      <textarea id="input" spellcheck="false" placeholder="Example:&#10;From: alerts@amaz0n-security[.]co&#10;The host 10.20.2.17 reached hxxp://bit[.]ly/3sHkX3da12340 (67.199.248.11).&#10;Payload SHA256: 44d88612fea8a8f36de82e1278abb02f...&#10;Related: CVE-2026-109618"></textarea>
+      <div class="row">
+        <button class="primary" id="btnExtract" type="button">Extract IOCs</button>
+        <button id="btnExample" type="button">Load example</button>
+        <button id="btnClear" type="button">Clear</button>
+      </div>
+      <p class="hint">Everything runs in your browser. Nothing is uploaded or sent anywhere, so it is safe for sensitive text. Input is automatically re-fanged (<span class="val" style="font-family:var(--mono)">hxxp</span>, <span style="font-family:var(--mono)">[.]</span>) before parsing.</p>
+    </section>
+
+    <section class="panel" aria-label="Results">
+      <div class="stats" id="stats"></div>
+      <div class="pyr" id="pyr"></div>
+      <div class="toolbar" id="toolbar" hidden>
+        <label for="filter" style="font-size:.84rem;color:var(--muted)">Show</label>
+        <select id="filter"><option value="all">All types</option></select>
+        <div class="spacer"></div>
+        <div class="seg" role="group" aria-label="Value style">
+          <button type="button" id="fDefang" aria-pressed="true">Defanged</button>
+          <button type="button" id="fRaw" aria-pressed="false">Raw</button>
+        </div>
+        <button id="btnCopyAll" type="button">Copy all</button>
+      </div>
+      <div class="results" id="results"><div class="empty-state">No IOCs yet. Paste some text and press <b>Extract IOCs</b>, or load the example.</div></div>
+      <div class="toast" id="toast" role="status"></div>
+    </section>
+  </div>
+
+  <p class="foot">The Pyramid of Pain (David Bianco, 2013) ranks indicators by how hard they are for an adversary to change. Blocking a hash or IP is trivial for them to work around; detecting their tools and behaviour (TTPs) is what really hurts. This tool rates atomic indicators only — the top tiers (Tools, TTPs) come from analysis, not from parsing text.</p>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+
+/* ---------- Pyramid tiers ---------- */
+const TIERS=[
+  {key:"ttp",      name:"TTPs",              pain:"Tough",       color:"var(--t-ttp)"},
+  {key:"tools",    name:"Tools",             pain:"Challenging", color:"var(--t-tools)"},
+  {key:"annoying", name:"Host & Network Artifacts", pain:"Annoying",    color:"var(--t-annoying)"},
+  {key:"simple",   name:"Domain Names",      pain:"Simple",      color:"var(--t-simple)"},
+  {key:"easy",     name:"IP Addresses",      pain:"Easy",        color:"var(--t-easy)"},
+  {key:"trivial",  name:"Hash Values",       pain:"Trivial",     color:"var(--t-trivial)"},
+];
+// map each IOC type -> {label, tier, note}
+const TYPES={
+  sha256:{label:"SHA256 hash", tier:"trivial", note:"One byte change = new hash. Blocking it costs the attacker nothing."},
+  sha1:  {label:"SHA1 hash",   tier:"trivial", note:"One byte change = new hash."},
+  md5:   {label:"MD5 hash",    tier:"trivial", note:"One byte change = new hash."},
+  ip:    {label:"IP address",  tier:"easy",    note:"A new IP is cheap and quick to get."},
+  ip_priv:{label:"Internal IP",tier:"easy",    note:"RFC1918 private IP — internal host, not an attacker indicator to block."},
+  email: {label:"Email address",tier:"simple", note:"Tied to attacker infrastructure; a new address is cheap but takes a little setup."},
+  domain:{label:"Domain",      tier:"simple",  note:"Registering a new domain costs the attacker a little time and money."},
+  url:   {label:"URL",         tier:"annoying",note:"A full URI path is a network artifact — changing it means modifying the tool."},
+  file:  {label:"File name",   tier:"annoying",note:"A dropped file name is a host artifact — the attacker must change the tool to rename it."},
+  cve:   {label:"CVE",         tier:null,      note:"A vulnerability reference, not a blockable indicator — patch it."},
+};
+
+/* ---------- Defang / refang ---------- */
+function refang(t){
+  return t.replace(/\[\.\]|\(\.\)|\{\.\}/g,".").replace(/\[:\]/g,":")
+          .replace(/\[@\]|\(at\)|\[at\]/gi,"@").replace(/h[xX]{2}p(s?)/g,"http$1")
+          .replace(/\[dot\]/gi,".").replace(/\s*\.\s*/g,".");
+}
+function defang(v,ty){
+  if(ty==="md5"||ty==="sha1"||ty==="sha256"||ty==="ip_priv"||ty==="cve") return v;
+  let s=v.replace(/^http/i,m=>"hxxp"+m.slice(4));
+  if(ty==="email") return s.replace("@","[@]").replace(/\.([^.]*)$/, "[.]$1");
+  return s.replace(/\./g,"[.]");
+}
+
+/* ---------- IP helpers ---------- */
+function validIp(ip){return ip.split(".").every(o=>{const n=+o;return o!==""&&n>=0&&n<=255&&String(n)===o.replace(/^0+(?=\d)/,"")||(o.length<=3&&n>=0&&n<=255);});}
+function isPriv(ip){const p=ip.split(".").map(Number);return p[0]===10||p[0]===127||(p[0]===172&&p[1]>=16&&p[1]<=31)||(p[0]===192&&p[1]===168)||(p[0]===169&&p[1]===254);}
+
+/* ---------- Extraction ---------- */
+const TLD=/\.(com|net|org|io|co|gov|edu|mil|info|biz|ru|cn|uk|de|ir|xyz|top|site|online|pro|me|tv|cc|us|eu|dev|app|zip|mov|th|jp|kr|in|br|ca|au|nl|fr|se|pl)\b/i;
+function extract(raw){
+  let t=refang(raw);
+  const found=[]; const seen=new Set();
+  const add=(ty,val)=>{const k=ty.replace(/^ip_priv$/,"ip")+"|"+val.toLowerCase(); if(seen.has(k))return; seen.add(k); found.push({ty,val});};
+  const consume=(re,ty,fn)=>{t=t.replace(re,m=>{const v=(fn?fn(m):m); if(v!==null&&v!==undefined&&v!=="")add(typeof ty==="function"?ty(m):ty, (typeof v==="string"?v:m)); return " ".repeat(m.length);});};
+  // order matters: specific/long first, remove as we go
+  consume(/\bCVE-\d{4}-\d{4,7}\b/gi,"cve",m=>m.toUpperCase());
+  consume(/\b[a-f0-9]{64}\b/gi,"sha256",m=>m.toLowerCase());
+  consume(/\b[a-f0-9]{40}\b/gi,"sha1",m=>m.toLowerCase());
+  consume(/\b[a-f0-9]{32}\b/gi,"md5",m=>m.toLowerCase());
+  consume(/\bhttps?:\/\/[^\s"'<>()\[\]]+/gi,"url",m=>m.replace(/[.,;:)]+$/,""));
+  consume(/\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/g,"email");
+  consume(/\b[A-Za-z0-9][A-Za-z0-9._\-]*\.(?:exe|dll|ps1|bat|cmd|vbs|vbe|js|jse|hta|scr|jar|msi|lnk|sys|elf|apk|sh|py|docm|xlsm|pptm|iso|img)\b/gi,"file",m=>m.toLowerCase());
+  // IPs with a version/build guard (skip "version 4.2.1.0" and chained "1.2.3.4.5")
+  t=t.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g,(m,off,str)=>{
+    const before=str.slice(Math.max(0,off-12),off);
+    const after=str.slice(off+m.length,off+m.length+2);
+    const isVersion=/(?:\bv|\bver|version|build|rev|release)\.?\s*$/i.test(before)||/^\.\d/.test(after);
+    if(validIp(m)&&!isVersion)add(isPriv(m)?"ip_priv":"ip",m);
+    return " ".repeat(m.length);
+  });
+  consume(/\b(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\b/gi,"domain",m=>TLD.test("."+m.split(".").pop())||TLD.test(m)?m.toLowerCase():null);
+  return found;
+}
+
+/* ---------- State & render ---------- */
+let data=[]; let style="defang"; let filter="all";
+const EXAMPLE=`Subject: Your Amazon Package Could Not Be Delivered
+From: urgents@amaz0n-security[.]co
+Reply-To: no-reply@hrconnex[.]thm
+
+Dear Customer, confirm your shipping info: hxxp://bit[.]ly/3sHkX3da12340
+Mirror: hxxps://m1crosoftsupport[.]co/login
+
+--- Firewall / EDR enrichment ---
+Internal host 10.20.2.17 (SourcePort 34257) -> 67.199.248.11:80  Action: blocked
+Second host 10.20.2.25 -> 45.148.10.131:443  Action: allowed
+Dropped payload SHA256: 44d88612fea8a8f36de82e1278abb02f6f58d7f2a2f0e0a9f0d7c3b5e6a1c2d4
+Loader MD5: 5d41402abc4b2a76b9719d911017c592
+Linked exploit: CVE-2026-109618`;
+
+function tierCount(){const c={};TIERS.forEach(t=>c[t.key]=0);data.forEach(d=>{const ti=TYPES[d.ty]&&TYPES[d.ty].tier;if(ti)c[ti]++;});return c;}
+
+function render(){
+  // stats
+  const byType={};data.forEach(d=>{const base=d.ty==="ip_priv"?"ip":d.ty;byType[base]=(byType[base]||0)+1;});
+  const stats=$("stats");stats.innerHTML="";
+  const blockable=data.filter(d=>d.ty!=="cve"&&d.ty!=="ip_priv").length;
+  const cards=[["Total",data.length],["Blockable",blockable]];
+  const order=["sha256","sha1","md5","url","file","domain","ip","email","cve"];
+  order.forEach(k=>{if(byType[k])cards.push([TYPES[k].label.replace(/ (hash|address)$/,""),byType[k]]);});
+  cards.forEach(([n,v])=>{const d=document.createElement("div");d.className="stat";d.innerHTML=`<b>${v}</b><span>${n}</span>`;stats.appendChild(d);});
+
+  // pyramid
+  const counts=tierCount();const pyr=$("pyr");pyr.innerHTML="";
+  const widths=[46,56,66,76,86,96];
+  TIERS.forEach((t,i)=>{
+    const n=counts[t.key];const row=document.createElement("div");
+    row.className="pyr-row"+(n?"":" empty");row.style.background=t.color;row.style.width=widths[i]+"%";
+    row.innerHTML=`<span class="nm">${t.name}</span><span class="ct">${n}</span>`;
+    row.title=t.pain;pyr.appendChild(row);
+  });
+  const cap=document.createElement("div");cap.className="pyr-cap";cap.innerHTML="<span>▲ harder to change · more pain</span><span>easier ▼</span>";pyr.appendChild(cap);
+
+  // filter options
+  const sel=$("filter");const cur=sel.value;
+  sel.innerHTML='<option value="all">All types ('+data.length+')</option>';
+  order.forEach(k=>{if(byType[k]){const o=document.createElement("option");o.value=k;o.textContent=TYPES[k].label+" ("+byType[k]+")";sel.appendChild(o);}});
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:"all";filter=sel.value;
+
+  $("toolbar").hidden=data.length===0;
+
+  // results
+  const res=$("results");res.innerHTML="";
+  if(!data.length){res.innerHTML='<div class="empty-state">No indicators found in that text. Try the example, or paste logs / an email / a report.</div>';return;}
+  const tierRank={};TIERS.forEach((t,i)=>tierRank[t.key]=i);
+  const list=data.filter(d=>{const base=d.ty==="ip_priv"?"ip":d.ty;return filter==="all"||base===filter;})
+    .slice().sort((a,b)=>{
+      const ra=TYPES[a.ty].tier?tierRank[TYPES[a.ty].tier]:-1, rb=TYPES[b.ty].tier?tierRank[TYPES[b.ty].tier]:-1;
+      return ra-rb || a.val.localeCompare(b.val);
+    });
+  list.forEach(d=>{
+    const t=TYPES[d.ty];const tier=t.tier?TIERS.find(x=>x.key===t.tier):null;
+    const shown=style==="defang"?defang(d.val,d.ty):d.val;
+    const el=document.createElement("div");el.className="ioc";
+    el.style.borderLeftColor=tier?tier.color:"var(--muted)";
+    el.innerHTML=`<button class="copy1" title="Copy">copy</button>
+      <div class="val"></div>
+      <div class="meta"><span class="ty" style="color:${tier?tier.color:'var(--muted)'}"></span><span class="tier"></span></div>`;
+    el.querySelector(".val").textContent=shown;
+    el.querySelector(".ty").textContent=t.label;
+    el.querySelector(".tier").textContent=tier?tier.pain:"context";
+    el.title=t.note;
+    el.querySelector(".copy1").onclick=()=>copy(shown,"Copied.");
+    res.appendChild(el);
+  });
+}
+
+/* ---------- Copy ---------- */
+function copy(text,msg){
+  const toast=$("toast");
+  const done=()=>{toast.textContent=msg||"Copied.";setTimeout(()=>toast.textContent="",2200);};
+  try{navigator.clipboard.writeText(text).then(done,()=>fallback(text,toast));}catch(e){fallback(text,toast);}
+}
+function fallback(text,toast){
+  const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast.textContent="Copied.";}catch(e){toast.textContent="Press Ctrl+C to copy.";}
+  setTimeout(()=>{ta.remove();toast.textContent="";},2200);
+}
+
+/* ---------- Events ---------- */
+$("btnExtract").onclick=()=>{data=extract($("input").value);render();if(data.length)$("toast").textContent=data.length+" indicator"+(data.length>1?"s":"")+" found.";setTimeout(()=>$("toast").textContent="",1800);};
+$("btnExample").onclick=()=>{$("input").value=EXAMPLE;data=extract(EXAMPLE);render();};
+$("btnClear").onclick=()=>{$("input").value="";data=[];render();$("input").focus();};
+$("filter").onchange=e=>{filter=e.target.value;render();};
+$("fDefang").onclick=()=>{style="defang";$("fDefang").setAttribute("aria-pressed","true");$("fRaw").setAttribute("aria-pressed","false");render();};
+$("fRaw").onclick=()=>{style="raw";$("fRaw").setAttribute("aria-pressed","true");$("fDefang").setAttribute("aria-pressed","false");render();};
+$("btnCopyAll").onclick=()=>{
+  const base=d=>d.ty==="ip_priv"?"ip":d.ty;
+  const list=data.filter(d=>filter==="all"||base(d)===filter);
+  if(!list.length){return;}
+  const txt=list.map(d=>(style==="defang"?defang(d.val,d.ty):d.val)+"\t"+TYPES[d.ty].label).join("\n");
+  copy(txt,list.length+" IOCs copied.");
+};
+
+// start with the example so the tool opens in a working state
+$("input").value=EXAMPLE;data=extract(EXAMPLE);render();
+})();
+</script>

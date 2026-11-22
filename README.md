@@ -23,7 +23,9 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 | Introduction to SOAR | [notes/intro-to-soar.md](notes/intro-to-soar.md) |
 | Pyramid of Pain | [notes/pyramid-of-pain.md](notes/pyramid-of-pain.md) |
 | Cyber Kill Chain | [notes/cyber-kill-chain.md](notes/cyber-kill-chain.md) |
+| Network Security Monitoring | [notes/network-security-monitoring.md](notes/network-security-monitoring.md) |
 | SPL vs KQL cheatsheet | [cheatsheets/siem-queries.md](cheatsheets/siem-queries.md) |
+| Wireshark & Snort cheatsheet | [cheatsheets/wireshark-snort.md](cheatsheets/wireshark-snort.md) |
 
 ## Tools
 
@@ -37,7 +39,9 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 - [x] Introduction to SOAR
 - [x] Pyramid of Pain
 - [x] Cyber Kill Chain
+- [x] Network Security Monitoring (Wireshark, Snort, exfiltration & MITM detection)
 - [x] SOC Simulator: phishing scenario (passed, all true positives identified)
+- [x] LetsDefend: live alert triage (web attack false-positive investigation)
 
 ## My triage method
 

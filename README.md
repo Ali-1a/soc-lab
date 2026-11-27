@@ -20,9 +20,12 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 |---|---|
 | Splunk: The Basics | [notes/splunk-basics.md](notes/splunk-basics.md) |
 | Elastic Stack: The Basics | [notes/elastic-stack-basics.md](notes/elastic-stack-basics.md) |
+| EDR & SIEM fundamentals | [notes/edr-siem-fundamentals.md](notes/edr-siem-fundamentals.md) |
 | Introduction to SOAR | [notes/intro-to-soar.md](notes/intro-to-soar.md) |
 | Pyramid of Pain | [notes/pyramid-of-pain.md](notes/pyramid-of-pain.md) |
 | Cyber Kill Chain | [notes/cyber-kill-chain.md](notes/cyber-kill-chain.md) |
+| MITRE ATT&CK | [notes/mitre-attack.md](notes/mitre-attack.md) |
+| Phishing analysis | [notes/phishing-analysis.md](notes/phishing-analysis.md) |
 | Network Security Monitoring | [notes/network-security-monitoring.md](notes/network-security-monitoring.md) |
 | SPL vs KQL cheatsheet | [cheatsheets/siem-queries.md](cheatsheets/siem-queries.md) |
 | Wireshark & Snort cheatsheet | [cheatsheets/wireshark-snort.md](cheatsheets/wireshark-snort.md) |
@@ -34,11 +37,14 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 
 ## Progress
 
+- [x] Core SOC Solutions (SIEM, EDR, SOAR)
 - [x] Splunk: The Basics
 - [x] Elastic Stack: The Basics
 - [x] Introduction to SOAR
 - [x] Pyramid of Pain
 - [x] Cyber Kill Chain
+- [x] MITRE ATT&CK (tactics, techniques, Navigator, Groups, D3FEND, Mitigations)
+- [x] Phishing Analysis
 - [x] Network Security Monitoring (Wireshark, Snort, exfiltration & MITM detection)
 - [x] SOC Simulator: phishing scenario (passed, all true positives identified)
 - [x] LetsDefend: live alert triage (web attack false-positive investigation)

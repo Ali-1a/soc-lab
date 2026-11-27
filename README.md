@@ -27,6 +27,8 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 | MITRE ATT&CK | [notes/mitre-attack.md](notes/mitre-attack.md) |
 | Phishing analysis | [notes/phishing-analysis.md](notes/phishing-analysis.md) |
 | Network Security Monitoring | [notes/network-security-monitoring.md](notes/network-security-monitoring.md) |
+| Web Security Monitoring | [notes/web-security-monitoring.md](notes/web-security-monitoring.md) |
+| Windows Security Monitoring | [notes/windows-security-monitoring.md](notes/windows-security-monitoring.md) |
 | SPL vs KQL cheatsheet | [cheatsheets/siem-queries.md](cheatsheets/siem-queries.md) |
 | Wireshark & Snort cheatsheet | [cheatsheets/wireshark-snort.md](cheatsheets/wireshark-snort.md) |
 
@@ -46,6 +48,8 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 - [x] MITRE ATT&CK (tactics, techniques, Navigator, Groups, D3FEND, Mitigations)
 - [x] Phishing Analysis
 - [x] Network Security Monitoring (Wireshark, Snort, exfiltration & MITM detection)
+- [x] Web Security Monitoring (log analysis, web shells, DDoS detection)
+- [x] Windows Security Monitoring (Event IDs, Sysmon, Windows threat detection)
 - [x] SOC Simulator: phishing scenario (passed, all true positives identified)
 - [x] LetsDefend: live alert triage (web attack false-positive investigation)
 
@@ -59,7 +63,7 @@ I am working through the TryHackMe **SOC Level 1** path and practising alert tri
 
 ## Skills
 
-`Wireshark` · `Splunk` · `Elastic Stack / Kibana` · `SPL` · `KQL` · `MITRE ATT&CK` · `Python` · `Phishing analysis` · `Alert triage` · `Incident reporting`
+`Wireshark` · `Splunk` · `Elastic Stack / Kibana` · `SPL` · `KQL` · `MITRE ATT&CK` · `Windows Event Logs / Sysmon` · `Web log analysis` · `Python` · `Phishing analysis` · `Alert triage` · `Incident reporting`
 
 ## License
 

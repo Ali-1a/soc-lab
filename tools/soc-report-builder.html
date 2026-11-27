@@ -179,7 +179,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
           <button type="button" id="verTpl" aria-pressed="false">Template</button>
           <button type="button" id="verAi" aria-pressed="true">AI version</button>
         </div>
-        <p class="ai-note" id="aiNote">Connecting to Claude…</p>
+        <p class="ai-note" id="aiNote">Connecting to AI…</p>
       </div>
       <div class="status" id="status"></div>
       <pre id="report" tabindex="0"></pre>
@@ -450,7 +450,7 @@ $("btnCopy").onclick=()=>{
   try{ navigator.clipboard.writeText(txt).then(()=>{toast.textContent="Copied to clipboard.";setTimeout(()=>toast.textContent="",2500);},fallback); }catch(e){ fallback(); }
 };
 
-/* ---------- AI (Claude) ---------- */
+/* ---------- AI ---------- */
 function showReport(){ $("report").textContent = (aiText!==null && view==="ai") ? aiText : tplText; }
 function setNote(t,c){ const n=$("aiNote"); n.textContent=t; n.className="ai-note"+(c?" "+c:""); }
 function setView(v){ view=v; $("verTpl").setAttribute("aria-pressed",v==="tpl"); $("verAi").setAttribute("aria-pressed",v==="ai"); showReport(); }
@@ -468,12 +468,12 @@ function facts(d){
   ].join("\n");
 }
 const ERR = {
-  not_granted:"Claude access was not allowed for this page. AI features are off; the template report still works.",
-  sampling_disabled:"Claude is not available for this account. The template report still works.",
+  not_granted:"AI access was not allowed for this page. AI features are off; the template report still works.",
+  sampling_disabled:"AI is not available for this account. The template report still works.",
   rate_limited:"Too many requests right now. Wait a minute and try again.",
-  session_expired:"Your Claude session expired. Sign in again, then try once more.",
-  refused:"Claude declined this input. Rephrase the fields and try again.",
-  empty_completion:"Claude returned nothing. Try again with more detail in the form.",
+  session_expired:"Your AI session expired. Sign in again, then try once more.",
+  refused:"The AI declined this input. Rephrase the fields and try again.",
+  empty_completion:"The AI returned nothing. Try again with more detail in the form.",
   prompt_too_large:"The form is too long. Shorten the evidence or description."
 };
 function errMsg(e){ return ERR[e&&e.code] || "Connection problem. Try again in a moment."; }
@@ -484,7 +484,7 @@ async function runAi(kind){
   const d=read();
   busy=true; ctl=new AbortController();
   $("btnAi").disabled=$("btnReview").disabled=true; $("btnStop").hidden=false;
-  setNote("Claude is thinking… this usually takes 10 to 40 seconds.");
+  setNote("The AI is thinking… this usually takes 10 to 40 seconds.");
   try{
     if(kind==="write"){
       const prompt =
@@ -548,11 +548,11 @@ $("btnReview").onclick=()=>runAi("review");
 $("btnStop").onclick=()=>ctl&&ctl.abort();
 
 (async()=>{
-  if(!window.claude||typeof window.claude.use!=="function"){ hideAi("AI writing works when you open this page from its Claude link. The template report works everywhere."); return; }
+  if(!window.claude||typeof window.claude.use!=="function"){ hideAi("AI writing works when you open this page from its hosted link. The template report works everywhere."); return; }
   try{ sample=await window.claude.use("sample"); }catch(e){ sample=null; }
   if(!sample){ hideAi("AI writing is not available in this view. The template report still works."); return; }
   $("btnAi").disabled=$("btnReview").disabled=false;
-  setNote("Claude can rewrite your report professionally or review your analysis. It uses only the facts you enter.");
+  setNote("The AI can rewrite your report professionally or review your analysis. It uses only the facts you enter.");
 })();
 
 // start: saved draft, otherwise the example
